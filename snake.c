@@ -3,7 +3,7 @@
 #include <Windows.h>
 
 // 30*30 Blocks
-// BLOCK-0 or N
+// BLOCK- 0 or N
 // 0-Empty
 // N-Filled(1-SnakeBlock/2-FoodBlock/3-Explosive)
 
@@ -25,22 +25,22 @@ void keyinput(char input)
     {
     case 'w':
         // case 'W':
-        velY = -1;
+        if(velY == 0)velY = -1;
         velX = 0;
         break;
     case 'a':
         // case 'A':
-        velX = -1;
+        if(velX == 0)velX = -1;
         velY = 0;
         break;
     case 's':
         // case 'S':
-        velY = 1;
+        if(velY == 0)velY = 1;
         velX = 0;
         break;
     case 'd':
         // case 'D':
-        velX = 1;
+        if(velX == 0)velX = 1;
         velY = 0;
         break;
     case 'q':
@@ -50,6 +50,12 @@ void keyinput(char input)
     default:
         printf("Invalid key! Use W/A/S/D to move, Q to quit.\n");
     }
+}
+
+int index(int row, int col)
+{
+
+    return (row - 1) * (30) + col - 1;
 }
 
 void GameLoop()
@@ -66,53 +72,56 @@ void GameLoop()
 
     // move
     // Resenting old block
+    // b3->b2 b2->b1 b1->bnew
 
-    // b3->b2 b2->b1 b1->b1new
+    // removing last block
+    int tempCol = col[snakeLen-1], tempRow = row[snakeLen-1];
 
-    block[(row[snakeLen - 1] - 1) * (30) + col[snakeLen - 1] - 1] = 0;
-
-    for (int i = snakeLen - 1; i > 0; i--)
+    tempCol += velX;
+    if (tempCol > 30 || tempCol < 1)
     {
-        row[i] = row[i - 1];
-        col[i] = col[i - 1];
-        if (block[(row[i] - 1) * (30) + col[i] - 1] == 2)
-        {
-            score++;
-            snakeLen++;
-        }
-        else
-        {
-            block[(row[i] - 1) * (30) + col[i] - 1] = 1;
-        }
-
-       // printf("<%d> %d\n", i, block[(row[i] - 1) * (30) + col[i] - 1]);
+        tempCol = tempCol - velX * 30;
     }
-
-    block[(row[0] - 1) * (30) + col[0] - 1] = 0;
-
-    // Updating new Block`s Instance
-    col[0] += velX;
-    if (col[0] > 30 || col[0] < 1)
+    tempRow += velY;
+    if (tempRow > 30 || tempRow < 1)
     {
-        col[0] = col[0] - velX * 30;
-    }
-
-    row[0] += velY;
-    if (row[0] > 30 || row[0] < 1)
-    {
-        row[0] = row[0] - velY * 30;
+        tempRow = tempRow - velY * 30;
     }
     // Updating new Block
-    if (block[(row[0] - 1) * (30) + col[0] - 1] == 2)
+    if (block[index(tempRow, tempCol)] == 2)
     {
         score++;
         snakeLen++;
+        row[snakeLen - 1]=tempRow;
+        col[snakeLen - 1]=tempCol;
+        //Stop all blocks and add new block in front
+        block[index(row[snakeLen - 1], col[snakeLen - 1])] = 1;
+
+    }else if (block[index(tempRow, tempCol)] == 1)
+    {
+        gameover=1;
+        return;
     }
     else
     {
-
-        block[(row[0] - 1) * (30) + col[0] - 1] = 1;
+        //removing tail(last block-firstindex)
+        block[index(row[0], col[0])] = 0;
+        //shifting blocks
+        for (int i = 0; i <snakeLen-1; i++)
+        {
+            row[i] = row[i + 1];
+            col[i] = col[i + 1];
+            block[index(row[i], col[i])] = 1;
+        }
+        row[snakeLen-1]=tempRow;
+        col[snakeLen-1]=tempCol;
+        block[index(row[snakeLen-1],col[snakeLen-1])] = 1;
     }
+
+   
+
+    // Updating new Block`s Instance
+
 
     // Printing
     for (int i = 0; i < 30; i++)
@@ -160,43 +169,46 @@ void GameLoop()
     printf("\n VelX<%d> VelY<%d> row[0]<%d> col[0]<%d>", velX, velY, row[0], col[0]);
     for (int i = 0; i < snakeLen; i++)
     {
-        printf("\nrow[%d]<%d> col[%d]<%d> block<%d>", i, row[i], i, col[i], block[(row[i] - 1) * (30) + col[i] - 1]);
+       // printf("\nrow[%d]<%d> col[%d]<%d> block<%d>", i, row[i], i, col[i], block[(row[i] - 1) * (30) + col[i] - 1]);
     }
 
     printf("\n time<%d>", time);
     // system("cls");
 
-    if (block[35]==1)
+    if (block[35] == 1)
     {
-        block[800]=2;
+        block[800] = 2;
     }
-    if (block[800]==1)
+    if (block[800] == 1)
     {
-        block[35]=2;
+        block[35] = 2;
     }
-    
 }
 
 int main()
 {
-
     // system("cls");
+    // Initializing Blocks
+    for (int i = 0; i < 900; i++)
+    {
+        block[i] = 0;
+    }
+    // Initializing Snake with length=snakeLen
     for (int i = 0; i < snakeLen; i++)
     {
         row[i] = 15;
     }
     for (int i = 0; i < snakeLen; i++)
     {
-        col[i] = 15 - i;
+        col[i] = 15 + i;
+    }
+    for (int i = 0; i < snakeLen; i++)
+    {
+        block[index(row[i], col[i])] = 1;
     }
 
     velX = 1;
     velY = 0;
-
-    for (int i = 0; i < 900; i++)
-    {
-        block[i] = 0;
-    }
 
     // Food
     block[35] = 2;
@@ -206,9 +218,9 @@ int main()
     {
 
         GameLoop();
-        Sleep(10);
+        Sleep(100);
         time++;
     }
-
+    printf("\nGame Over!");
     return 0;
 }
